@@ -373,7 +373,7 @@ void PCAMatrix::train (Index::idx_t n, const float *x)
 
         eig (n, gramd.data (), eigenvaluesd.data (), verbose);
 
-        PCAMat.resize(d_in * d_in);
+        PCAMat.resize(d_in * n);
 
         for (size_t i = 0; i < n * n; i++)
             gram [i] = gramd [i];
@@ -393,7 +393,6 @@ void PCAMatrix::train (Index::idx_t n, const float *x)
                     &one, PCAMat.data(), &di);
         }
 
-
         if(verbose && d_in <= 10) {
             float *ci = PCAMat.data();
             printf("PCAMat=\n");
@@ -406,8 +405,6 @@ void PCAMatrix::train (Index::idx_t n, const float *x)
         fvec_renorm_L2 (d_in, n, PCAMat.data());
 
     }
-
-
 
     prepare_Ab();
     is_trained = true;
@@ -427,6 +424,10 @@ void PCAMatrix::prepare_Ab ()
 {
 
     if (!random_rotation) {
+        FAISS_THROW_IF_NOT_MSG (
+            d_out * d_in <= PCAMat.size(),
+            "PCA matrix was trained on too few examples "
+            "to output this number of dimensions");
         A = PCAMat;
         A.resize(d_out * d_in); // strip off useless dimensions
 
@@ -803,18 +804,38 @@ void IndexPreTransform::train (idx_t n, const float *x)
     const float *prev_x = x;
     ScopeDeleter<float> del;
 
+    if (verbose) {
+        printf("IndexPreTransform::train: training chain 0 to %d\n",
+               last_untrained);
+    }
+
     for (int i = 0; i <= last_untrained; i++) {
         if (i < chain.size()) {
             VectorTransform *ltrans = chain [i];
-            if (!ltrans->is_trained)
-                ltrans->train(n, prev_x);
+            if (!ltrans->is_trained) {
+                if (verbose) {
+                    printf("   Training chain component %d/%zd\n",
+                           i, chain.size());
+                    if (OPQMatrix *opqm = dynamic_cast<OPQMatrix*>(ltrans)) {
+                        opqm->verbose = true;
+                    }
+                }
+                ltrans->train (n, prev_x);
+            }
         } else {
+            if (verbose) {
+                printf("   Training sub-index\n");
+            }
             index->train (n, prev_x);
         }
         if (i == last_untrained) break;
+        if (verbose) {
+            printf("   Applying transform %d/%zd\n",
+                   i, chain.size());
+        }
 
         float * xt = chain[i]->apply (n, prev_x);
-        if (prev_x != x) delete prev_x;
+        if (prev_x != x) delete [] prev_x;
         prev_x = xt;
         del.set(xt);
     }

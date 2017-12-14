@@ -1,5 +1,7 @@
 # Faiss 
 
+*NEW: there is now a Facebook public discussion group for Faiss users at https://www.facebook.com/groups/faissusers/*
+
 *UPDATE: As of July 30 2017, the license on Faiss was relaxed to BSD from CC-BY-NC. Read LICENSE for details.*
 
 Faiss is a library for efficient similarity search and clustering of dense vectors. It contains algorithms that search in sets of vectors of any size, up to ones that possibly do not fit in RAM. It also contains supporting code for evaluation and parameter tuning. Faiss is written in C++ with complete wrappers for Python/numpy. Some of the most useful algorithms are implemented on the GPU. It is developed by [Facebook AI Research](https://research.fb.com/category/facebook-ai-research-fair/).
@@ -14,7 +16,7 @@ The GPU implementation can accept input from either CPU or GPU memory. On a serv
 
 ## Building 
 
-The library is mostly implemented in C++, with optional GPU support provided via CUDA, and an optional Python interface. The CPU version requires a BLAS library. It compiles with a Makefile and can be packaged in a docker image. See [INSTALL](INSTALL) for details.
+The library is mostly implemented in C++, with optional GPU support provided via CUDA, and an optional Python interface. The CPU version requires a BLAS library. It compiles with a Makefile and can be packaged in a docker image. See [INSTALL.md](INSTALL.md) for details.
 
 ## How Faiss works
 
@@ -43,8 +45,22 @@ The main authors of Faiss are:
 - [Matthijs Douze](https://github.com/mdouze) implemented most of the CPU Faiss
 - [Jeff Johnson](https://github.com/wickedfoo) implemented all of the GPU Faiss
 
+## Reference
+
+Reference to cite when you use Faiss in a research paper:
+
+```
+@article{JDH17,
+  title={Billion-scale similarity search with GPUs},
+  author={Johnson, Jeff and Douze, Matthijs and J{\'e}gou, Herv{\'e}},
+  journal={arXiv preprint arXiv:1702.08734},
+  year={2017}
+}
+```
 
 ## Join the Faiss community
+
+For public discussion of Faiss or for questions, there is a Facebook public discussion group at https://www.facebook.com/groups/faissusers/
 
 We monitor the [issues page](http://github.com/facebookresearch/faiss/issues) of the repository. You can report bugs, ask questions, etc.
 

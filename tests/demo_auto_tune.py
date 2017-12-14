@@ -11,9 +11,13 @@ import time
 import numpy as np
 import pdb
 
-import matplotlib
-matplotlib.use('Agg')
-from matplotlib import pyplot
+try:
+    import matplotlib
+    matplotlib.use('Agg')
+    from matplotlib import pyplot
+    graphical_output = True
+except ImportError:
+    graphical_output = False
 
 import faiss
 
@@ -93,14 +97,14 @@ keys_mem_32 = [
 
 # indexes that can run on the GPU
 keys_gpu = [
+    "PCA64,IVF4096,Flat",
     "PCA64,Flat", "Flat", "IVF4096,Flat", "IVF16384,Flat",
-    "PCA64,IVF4096,Flat", "IVF4096,PQ32"]
+    "IVF4096,PQ32"]
 
 
 keys_to_test = unlimited_mem_keys
-
-
 use_gpu = False
+
 
 if use_gpu:
     # if this fails, it means that the GPU version was not comp
@@ -152,7 +156,7 @@ for index_key in keys_to_test:
 
     op_per_key.append((index_key, opi))
 
-    if True:
+    if graphical_output:
         # graphical output (to tmp/ subdirectory)
 
         fig = pyplot.figure(figsize=(12, 9))

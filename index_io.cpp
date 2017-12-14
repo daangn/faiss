@@ -222,7 +222,6 @@ void write_ProductQuantizer (const ProductQuantizer*pq, const char *fname) {
 }
 
 
-
 static void write_ivf_header (const IndexIVF * ivf, FILE *f,
                               bool include_ids = true) {
     write_index_header (ivf, f);
@@ -275,11 +274,11 @@ void write_index (const Index *idx, FILE *f) {
         WRITEVECTOR (idxs->codes);
     } else if(const IndexIVFFlat * ivfl =
               dynamic_cast<const IndexIVFFlat *> (idx)) {
-        uint32_t h = fourcc ("IvFl");
+        uint32_t h = fourcc ("IvFL");
         WRITE1 (h);
         write_ivf_header (ivfl, f);
         for(int i = 0; i < ivfl->nlist; i++)
-            WRITEVECTOR (ivfl->vecs[i]);
+            WRITEVECTOR (ivfl->codes[i]);
     } else if(const IndexIVFScalarQuantizer * ivsc =
               dynamic_cast<const IndexIVFScalarQuantizer *> (idx)) {
         uint32_t h = fourcc ("IvSQ");
@@ -445,6 +444,7 @@ static void read_ScalarQuantizer (ScalarQuantizer *ivsc, FILE *f) {
     READVECTOR (ivsc->trained);
 }
 
+
 ProductQuantizer * read_ProductQuantizer (const char*fname) {
     FILE *f = fopen (fname, "r");
     FAISS_THROW_IF_NOT_FMT (f, "cannot open %s for writing", fname);
@@ -594,12 +594,24 @@ Index *read_index (FILE * f, bool try_mmap) {
             idxp->metric_type = METRIC_L2;
         }
         idx = idxp;
-    } else if(h == fourcc ("IvFl")) {
+    } else if (h == fourcc ("IvFl") || h == fourcc("IvFL")) {
         IndexIVFFlat * ivfl = new IndexIVFFlat ();
         read_ivf_header (ivfl, f);
-        ivfl->vecs.resize (ivfl->nlist);
-        for (size_t i = 0; i < ivfl->nlist; i++)
-            READVECTOR (ivfl->vecs[i]);
+        ivfl->code_size = ivfl->d * sizeof(float);
+        ivfl->codes.resize (ivfl->nlist);
+        if (h == fourcc ("IvFL")) {
+            for (size_t i = 0; i < ivfl->nlist; i++) {
+                READVECTOR (ivfl->codes[i]);
+            }
+        } else { // old format
+            for (size_t i = 0; i < ivfl->nlist; i++) {
+                std::vector<float> vec;
+                READVECTOR (vec);
+                ivfl->codes[i].resize(vec.size() * sizeof(float));
+                memcpy(ivfl->codes[i].data(), vec.data(),
+                       ivfl->codes[i].size());
+            }
+        }
         idx = ivfl;
     } else if (h == fourcc ("IxSQ")) {
         IndexScalarQuantizer * idxs = new IndexScalarQuantizer ();
@@ -664,8 +676,8 @@ Index *read_index (FILE * f, bool try_mmap) {
         }
         idx = idxmap;
     } else {
-        fprintf (stderr, "Index type 0x%08x not supported\n", h);
-        abort ();
+        FAISS_THROW_FMT("Index type 0x%08x not supported\n", h);
+        idx = nullptr;
     }
     return idx;
 }

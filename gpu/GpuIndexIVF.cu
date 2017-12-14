@@ -29,8 +29,9 @@ GpuIndexIVF::GpuIndexIVF(GpuResources* resources,
     nprobe_(1),
     quantizer_(nullptr) {
 #ifndef FAISS_USE_FLOAT16
-  FAISS_THROW_IF_NOT_MSG(!ivfConfig_.flatConfig.useFloat16CoarseQuantizer,
-                     "float16 unsupported; need CUDA SDK >= 7.5");
+  FAISS_THROW_IF_NOT_MSG(!ivfConfig_.flatConfig.useFloat16 &&
+                         !ivfConfig_.flatConfig.useFloat16Accumulator,
+                         "float16 unsupported; need CUDA SDK >= 7.5");
 #endif
 
   init_();
@@ -184,7 +185,7 @@ GpuIndexIVF::copyTo(faiss::IndexIVF* index) const {
   }
 
   index->quantizer = q;
-  index->quantizer_trains_alone = false;
+  index->quantizer_trains_alone = 0;
   index->own_fields = true;
   index->cp = this->cp;
   index->ids.clear();
